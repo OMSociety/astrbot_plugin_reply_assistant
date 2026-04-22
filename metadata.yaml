@@ -2,5 +2,5 @@ author: Slandre & Flandre
 desc: 本地规则智能分段插件。通过自定义字数、标点优先级、超长降级等规则实现极断句告别AI大模型延迟，彻底告告别AI大模型延迟，零成本更稳定。
 display_name: 分段与文本替换
 logo_path: ''
-name: astrbot_plugin_custome_segment_reply
+name: astrbot_plugin_reply_assistant
 version: 1.0.0
