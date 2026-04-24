@@ -1,6 +1,10 @@
 # 分段与文本替换插件
 
-本地规则智能分段插件，支持字符串替换和 Markdown 格式清除。
+---
+
+## Logo 致谢
+
+插件 Logo 来源于 [Pixiv](https://www.pixiv.net/artworks/115400125)。
 
 ---
 
