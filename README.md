@@ -7,7 +7,6 @@
 致谢
 
 > 本项目基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 重构。
-
 > 插件 Logo 来源于 Pixiv Pid: [115400125](https://www.pixiv.net/artworks/115400125)。
 
 ---
