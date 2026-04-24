@@ -1,14 +1,6 @@
 # 分段与文本替换插件
 
-
-
----
-
-致谢
-
 > 本项目基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 重构。
->
-> 插件 Logo 来源于 Pixiv Pid: [115400125](https://www.pixiv.net/artworks/115400125)。
 
 ---
 
@@ -22,6 +14,14 @@
 
 ---
 
+## 安装
+
+1. 将插件文件夹放入 `AstrBot/data/plugins/` 目录
+2. 重启 AstrBot
+3. 在 WebUI 管理面板 -> 插件设置中配置
+
+---
+
 ## 分段算法
 
 采用区间探测分段策略：
@@ -30,14 +30,6 @@
 2. **弹性延伸**：`allow_exceed_max=true` 时，向后扩展找下一个断点
 3. **绝对熔断**：超过 `hard_max_limit` 则强制截断
 4. **短尾合并**：最后一段过短时合并到前一段
-
----
-
-## 安装与配置
-
-1. 将插件文件夹放入 `AstrBot/data/plugins/` 目录
-2. 重启 AstrBot
-3. 在 WebUI 管理面板 -> 插件设置中配置
 
 ---
 
@@ -105,10 +97,6 @@
 - 链接 `[文字](url)` - 保持原样
 - 图片 `![alt](url)` - 保持原样
 - 列表 `- item` - 保持原样
-
-## 其他配置
-
-此插件无需其他额外配置。
 
 ---
 
