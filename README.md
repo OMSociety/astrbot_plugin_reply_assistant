@@ -1,5 +1,7 @@
 # 分段与文本替换插件
 
+> 本项目基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 重构。
+
 ---
 
 ## Logo 致谢
