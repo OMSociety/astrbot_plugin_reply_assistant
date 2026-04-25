@@ -12,7 +12,7 @@ class SegmentConfigManager:
     配置管理类
     """
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict | None):
         self.config = config or {}
         self._init_length_config()
         self._init_symbol_config()
