@@ -148,9 +148,6 @@ class CustomSegmentReplyPlugin(Star):
                 return [text[:self.cfg.hard_max_limit]]
             return [text]
         
-        if not breakpoints:
-            return [text[:self.cfg.hard_max_limit]] if len(text) > self.cfg.hard_max_limit else [text]
-        
         # 区间探测分段
         segment_start = 0
         
