@@ -6,7 +6,6 @@
 2. 支持关键词排除（特定内容不分段）
 3. 支持字符替换（如将😀替换为🤪）
 4. 支持 Markdown 格式清除
-5. 保存分段内容到对话历史
 """
 
 import re
@@ -149,8 +148,8 @@ class CustomSegmentReplyPlugin(Star):
                 return [text[:self.cfg.hard_max_limit]]
             return [text]
         
-        # 按符号长度降序排列断点（优先匹配长符号）
-        breakpoints.sort()
+        if not breakpoints:
+            return [text[:self.cfg.hard_max_limit]] if len(text) > self.cfg.hard_max_limit else [text]
         
         # 区间探测分段
         segment_start = 0
@@ -209,7 +208,7 @@ class CustomSegmentReplyPlugin(Star):
 
     def _save_segment_history(self, original_text: str, segments: List[str], replace_count: int, event: AstrMessageEvent):
         """
-        保存分段历史（调试用）
+        记录分段日志（调试用）
 
         Args:
             original_text: 原始文本
@@ -217,10 +216,7 @@ class CustomSegmentReplyPlugin(Star):
             replace_count: 替换次数
             event: 消息事件
         """
-        try:
-            logger.info(f"[分段历史] 原始: {original_text[:50]}..., 分段数: {len(segments)}, 替换: {replace_count}")
-        except Exception as e:
-            logger.warning(f"[分段历史] 保存失败: {e}")
+        logger.info(f"[分段历史] 原始: {original_text[:50]}..., 分段数: {len(segments)}, 替换: {replace_count}")
     
     @on_decorating_result()
     async def on_decorating_result(self, event: AstrMessageEvent):
@@ -295,8 +291,7 @@ class CustomSegmentReplyPlugin(Star):
         # 更新消息链
         result.chain = new_chain
 
-    @staticmethod
-    async def terminate():
+    async def terminate(self):
         """
         插件卸载时调用的清理方法（当前无需清理）
         """
