@@ -44,7 +44,7 @@
   "keep_symbol": {
     "description": "保留断点符号",
     "type": "bool",
-    "default": true,
+    "default": false,
     "hint": "开启则分段后保留断点符号（如句号）；关闭则不保留。"
   },
   "exclude_keywords": {
@@ -62,19 +62,19 @@
   "enable_string_replace": {
     "description": "启用字符串替换",
     "type": "bool",
-    "default": true,
+    "default": false,
     "hint": "开启后将执行 string_replacements 中的替换规则。"
   },
   "string_replacements": {
     "description": "字符串替换规则列表",
     "type": "list",
-    "default": ["😁=>🤪", "😂=>🤭"],
+    "default": ["小笨蛋=>小可爱"],
     "hint": "格式：原字符=>替换后字符。如：\"😁=>🤪\"、\"笑死=>哈哈\""
   },
   "enable_markdown_replace": {
     "description": "启用 Markdown 清除",
     "type": "bool",
-    "default": true,
+    "default": false,
     "hint": "开启后将执行 markdown_replacements 中的 Markdown 格式清除规则。"
   },
   "markdown_replacements": {

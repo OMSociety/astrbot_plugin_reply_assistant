@@ -42,8 +42,7 @@ class SegmentConfigManager:
         """初始化分段符号配置"""
         raw_symbols = self.config.get("split_symbols")
         if not isinstance(raw_symbols, list) or len(raw_symbols) == 0:
-            raw_symbols = ["\n\n", "\n", "。", "！", "？", "；", "……", ".", "!", "?", ";", "」", "、", "，", ","]
-
+            raw_symbols = ["\n\n", "\n", "。", "！", "？"]
         self.split_symbols = []
         seen = set()
         for s in raw_symbols:
@@ -57,14 +56,14 @@ class SegmentConfigManager:
         if not self.split_symbols:
             self.split_symbols = ["\n\n", "\n", "。", "！", "？"]
 
-        self.keep_symbol = bool(self.config.get("keep_symbol", True))
+        self.keep_symbol = bool(self.config.get("keep_symbol", False))
 
     def _init_replace_config(self):
         """初始化替换相关配置"""
-        self.enable_string_replace = bool(self.config.get("enable_string_replace", True))
-        self.string_replacements = self._parse_replacements(self.config.get("string_replacements", []))
+        self.enable_string_replace = bool(self.config.get("enable_string_replace", False))
+        self.string_replacements = self._parse_replacements(self.config.get("string_replacements", ["小笨蛋=>小可爱"]))
 
-        self.enable_markdown_replace = bool(self.config.get("enable_markdown_replace", True))
+        self.enable_markdown_replace = bool(self.config.get("enable_markdown_replace", False))
         self.markdown_replacements = self._parse_replacements(self.config.get("markdown_replacements", []))
 
     def _init_exclude_config(self):
@@ -139,6 +138,7 @@ class SegmentConfigManager:
         """
         获取所有配置（供调试用）
 
+
         Returns:
             dict: 完整配置字典
         """
@@ -163,4 +163,3 @@ class SegmentConfigManager:
             "markdown_replacements": self.markdown_replacements,
             # 其他
         }
-

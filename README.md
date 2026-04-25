@@ -2,7 +2,9 @@
 
 > 本项目基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 重构。
 
+
 ---
+
 
 ## 功能列表
 
@@ -32,7 +34,9 @@
 
 ---
 
+
 ## 配置项说明
+
 
 ### 分段配置
 
@@ -44,33 +48,29 @@
 | `hard_max_limit` | int | 100 | 绝对熔断字数上限 |
 | `merge_short_tail` | bool | true | 启用短尾合并 |
 | `short_tail_threshold` | int | 8 | 短尾合并阈值 |
-| `split_symbols` | list | 见下方 | 断句符号列表（按优先级） |
-| `keep_symbol` | bool | true | 保留断点符号 |
-
-`split_symbols` 默认值：`["\n\n", "\n", "。", "！", "？"]`
+| `split_symbols` | list | `["\n\n", "\n", "。", "！", "？"]` | 断句符号列表（按优先级） |
+| `keep_symbol` | bool | false | 保留断点符号 |
 
 ### 排除配置
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `exclude_keywords` | list | 见下方 | 排除关键词列表 |
+| `exclude_keywords` | list | `["模型列表", "帮助", "help", "命令列表", "菜单", "功能列表"]` | 排除关键词列表 |
 | `exclude_patterns` | list | `[]` | 排除正则表达式列表 |
-
-`exclude_keywords` 默认值：`["模型列表", "帮助", "help", "命令列表", "菜单", "功能列表"]`
 
 ### 字符串替换配置
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `enable_string_replace` | bool | true | 启用字符串替换 |
-| `string_replacements` | list | `["😁=>🤪", "😂=>🤭"]` | 替换规则列表 |
+| `enable_string_replace` | bool | **false** | 启用字符串替换（默认关闭） |
+| `string_replacements` | list | `["小笨蛋=>小可爱"]` | 替换规则列表 |
 
 格式：`原字符=>替换后字符`
 
 示例：
 ```json
 "string_replacements": [
-  "😁=>🤪",
+  "小笨蛋=>小可爱",
   "笑死=>哈哈",
   "[敏感词]=>***"
 ]
@@ -80,7 +80,7 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `enable_markdown_replace` | bool | true | 启用 Markdown 清除 |
+| `enable_markdown_replace` | bool | **false** | 启用 Markdown 清除（默认关闭） |
 | `markdown_replacements` | list | 见下方 | Markdown 清除规则列表 |
 
 默认清除的格式：
@@ -110,17 +110,13 @@
   "merge_short_tail": true,
   "short_tail_threshold": 8,
   "split_symbols": ["\n\n", "\n", "。", "！", "？"],
-  "keep_symbol": true,
+  "keep_symbol": false,
   "exclude_keywords": ["模型列表", "帮助", "help", "命令列表", "菜单", "功能列表"],
-  "enable_string_replace": true,
+  "enable_string_replace": false,
   "string_replacements": [
-    "😁=>🤪",
-    "😂=>🤤"
+    "小笨蛋=>小可爱"
   ],
-  "enable_markdown_replace": true,
-  "markdown_replacements": [
-    {"pattern": "\\*\\*([^*]+)\\*\\*", "replacement": "", "is_regex": true},
-    {"pattern": "`([^`]+)`", "replacement": "", "is_regex": true}
-  ]
+  "enable_markdown_replace": false,
+  "markdown_replacements": []
 }
 ```
