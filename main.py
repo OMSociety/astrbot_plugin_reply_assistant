@@ -10,7 +10,6 @@
 
 import asyncio
 import json
-import random
 import re
 from typing import List
 
@@ -126,12 +125,8 @@ class CustomSegmentReplyPlugin(Star):
 
         segments: List[str] = []
 
-        if self.cfg.split_symbols:
-            escaped_symbols = [re.escape(s) for s in self.cfg.split_symbols]
-            symbol_pattern = "|".join(escaped_symbols)
-        else:
-            # 默认断句符号
-            symbol_pattern = r"\n\n|\n|。|！|？"
+        escaped_symbols = [re.escape(s) for s in self.cfg.split_symbols]
+        symbol_pattern = "|".join(escaped_symbols)
 
         split_regex = re.compile(symbol_pattern)
 
@@ -242,9 +237,11 @@ class CustomSegmentReplyPlugin(Star):
             
             # discord
             if platform == "discord":
-                # Discord 通过 typing() 上下文管理器实现，这里简化处理
-                if typing and hasattr(event, "_discord_event"):
-                    await event._discord_event.channel.trigger_typing()
+                try:
+                    if typing and hasattr(event, "_discord_event"):
+                        await event._discord_event.channel.trigger_typing()
+                except Exception as e:
+                    logger.debug(f"[ReplyAssistant] Discord typing 失败: {e}")
                 return
             
             # 其他平台尝试通用方式
@@ -307,7 +304,6 @@ class CustomSegmentReplyPlugin(Star):
         Args:
             event: 消息事件
         """
-        from astrbot.core.message.components import Image
         from astrbot.core.message.message_event_result import MessageChain, ResultContentType
 
         result = event.get_result()

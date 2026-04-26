@@ -36,6 +36,10 @@ class SegmentConfigManager:
         self.short_tail_threshold = max(0, self._safe_int("short_tail_threshold", 8))
 
         if self.hard_max_limit < self.max_length:
+            logger.warning(
+                f"[ReplyAssistant] hard_max_limit({self._safe_int('hard_max_limit', 100)}) "
+                f"小于 max_length({self.max_length})，已自动提升为 {self.max_length * 2}"
+            )
             self.hard_max_limit = self.max_length * 2
 
     def _init_symbol_config(self):
