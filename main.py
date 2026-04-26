@@ -8,6 +8,9 @@
 4. 支持 Markdown 格式清除
 """
 
+import asyncio
+import json
+import random
 import re
 from typing import List
 
@@ -15,6 +18,7 @@ from astrbot.api.event import AstrMessageEvent
 from astrbot.api.event.filter import on_decorating_result
 from astrbot.api.all import Context, Star, AstrBotConfig, logger, register
 from astrbot.api.message_components import Plain
+from astrbot.core.message.message_event_result import MessageChain
 
 from .config_manager import SegmentConfigManager
 
@@ -150,10 +154,16 @@ class CustomSegmentReplyPlugin(Star):
             range_start = segment_start + self.cfg.min_length
             range_end = segment_start + self.cfg.max_length
 
+            # 防止越界
+            if range_start > len(text):
+                range_start = len(text)
+            if range_end > len(text):
+                range_end = len(text)
+
             best_breakpoint = None
             matched_symbol = None
 
-            # 在 [range_start, range_end] 内找“最晚”断点（让每段尽量长）
+            # 在 [range_start, range_end] 内找"最晚"断点（让每段尽量长）
             window_breaks = [
                 (bp, symbol)
                 for bp, symbol in breakpoints
@@ -199,10 +209,103 @@ class CustomSegmentReplyPlugin(Star):
 
         return segments
 
+    def _calculate_delay(self, prev_seg: str, curr_seg: str) -> float:
+        """
+        根据配置计算发送延迟
+
+        Args:
+            prev_seg: 前一段文本
+            curr_seg: 当前要发送的文本
+
+        Returns:
+            float: 延迟秒数
+        """
+        delay_range = self.cfg.random_delay_range
+        if isinstance(delay_range, list) and len(delay_range) >= 2:
+            delay_min = float(delay_range[0])
+            delay_max = float(delay_range[1])
+        else:
+            delay_min, delay_max = 1.0, 3.0
+
+        if delay_min > delay_max:
+            delay_min, delay_max = delay_max, delay_min
+
+        # 使用正态分布生成随机延迟
+        mean = (delay_min + delay_max) / 2
+        std = max((delay_max - delay_min) / 6, 1e-6)
+        return max(delay_min, min(delay_max, random.gauss(mean, std)))
+
+    async def _set_typing(self, event: AstrMessageEvent, typing: bool):
+        """
+        向平台发送"正在输入"状态
+
+        Args:
+            event: 消息事件
+            typing: 是否显示正在输入
+        """
+        try:
+            if event.get_platform_name() != "aiocqhttp":
+                return
+            from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+            if not isinstance(event, AiocqhttpMessageEvent):
+                return
+            user_id = event.message_obj.sender.user_id
+            if not user_id:
+                return
+            await event.bot.api.call_action(
+                "set_input_status",
+                user_id=user_id,
+                event_type=1 if typing else 0,
+            )
+        except Exception:
+            pass
+
+    async def _save_to_conversation_history(self, event: AstrMessageEvent, content: str):
+        """
+        将分段合并后的完整回复写入对话历史
+
+        Args:
+            event: 消息事件
+            content: 完整的分段内容
+        """
+        try:
+            conv_mgr = self.context.conversation_manager
+            if not conv_mgr:
+                return
+
+            umo = event.unified_msg_origin
+            curr_cid = await conv_mgr.get_curr_conversation_id(umo)
+            if not curr_cid:
+                return
+
+            conversation = await conv_mgr.get_conversation(umo, curr_cid)
+            if not conversation:
+                return
+
+            try:
+                history = json.loads(conversation.history) if isinstance(conversation.history, str) else conversation.history
+            except (json.JSONDecodeError, TypeError):
+                history = []
+
+            user_content = event.message_str
+            if user_content and (not history or history[-1].get("role") != "user"):
+                history.append({"role": "user", "content": user_content})
+
+            history.append({"role": "assistant", "content": content})
+
+            await conv_mgr.update_conversation(
+                unified_msg_origin=umo,
+                conversation_id=curr_cid,
+                history=history,
+            )
+        except Exception as e:
+            logger.error(f"[分段插件] 保存对话历史失败: {e}")
+
     @on_decorating_result()
     async def on_decorating_result(self, event: AstrMessageEvent):
         """
         消息发送前处理钩子 - 在 bot 输出消息之前拦截并处理
+        分段内容通过 event.send() 逐条发送
 
         Args:
             event: 消息事件
@@ -211,16 +314,18 @@ class CustomSegmentReplyPlugin(Star):
         if result is None or not result.chain:
             return
 
-        new_chain = []
+        # 收集需要处理的纯文本内容
+        segments_to_send: List[str] = []
+        other_components: List[Plain] = []
 
         for comp in result.chain:
             if not isinstance(comp, Plain):
-                new_chain.append(comp)
+                other_components.append(comp)
                 continue
 
             text = comp.text
             if not text.strip():
-                new_chain.append(comp)
+                other_components.append(comp)
                 continue
 
             processed_text, replace_count = self._apply_replacements(text)
@@ -228,26 +333,62 @@ class CustomSegmentReplyPlugin(Star):
             if not self._should_segment(processed_text):
                 if replace_count > 0:
                     comp.text = processed_text
-                new_chain.append(comp)
+                other_components.append(comp)
                 continue
 
             segments = self._segment_text(processed_text)
             if len(segments) <= 1:
                 if replace_count > 0:
                     comp.text = processed_text
-                new_chain.append(comp)
+                other_components.append(comp)
                 continue
 
+            # 需要分段的内容
+            segments_to_send.extend(segments)
             logger.info(
                 f"[分段插件] 处理完成，原文长度 {len(text)}，替换 {replace_count} 处，分段 {len(segments)} 段"
             )
 
-            for segment in segments:
-                if segment == "":
-                    continue
-                new_chain.append(Plain(segment))
+        # 如果没有需要分段的内容，直接返回（使用原始 chain）
+        if not segments_to_send:
+            return
 
-        result.chain = new_chain
+        # 有分段内容需要发送
+        full_text = ""
+        if other_components:
+            # 保留非文本组件，用第一条分段替换
+            first_segment = segments_to_send[0]
+            result.chain = other_components + [Plain(first_segment)]
+            segments_to_send = segments_to_send[1:]
+            full_text = first_segment
+            if segments_to_send:
+                full_text = first_segment + "\n\n" + "\n\n".join(segments_to_send)
+        else:
+            # 清空 chain，用第一条分段填充
+            first_segment = segments_to_send[0]
+            result.chain = [Plain(first_segment)]
+            segments_to_send = segments_to_send[1:]
+            full_text = first_segment
+            if segments_to_send:
+                full_text = first_segment + "\n\n" + "\n\n".join(segments_to_send)
+
+        # 逐条发送剩余分段
+        if segments_to_send:
+            await self._set_typing(event, True)
+            for i, segment in enumerate(segments_to_send):
+                if i > 0:
+                    delay = self._calculate_delay(segments_to_send[i - 1], segment)
+                    await asyncio.sleep(delay)
+                await self._set_typing(event, True)
+                await event.send(MessageChain().message(segment))
+                await self._set_typing(event, False)
+            await self._set_typing(event, False)
+
+        # 保存完整的分段内容到对话历史
+        if full_text:
+            await self._save_to_conversation_history(event, full_text)
+
+        logger.info(f"[分段插件] 分段回复完成，共 {len(segments_to_send) + (1 if (other_components or first_segment) else 0)} 段")
 
     async def terminate(self):
         """
