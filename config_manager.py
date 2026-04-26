@@ -84,16 +84,6 @@ class SegmentConfigManager:
                 logger.warning(f"[配置] 排除正则无效，已忽略: {pattern}，错误: {e}")
 
     def _safe_int(self, key: str, default: int) -> int:
-        """
-        安全解析整数配置
-
-        Args:
-            key: 配置键名
-            default: 默认值
-
-        Returns:
-            int: 解析后的整数值
-        """
         try:
             return int(self.config.get(key, default))
         except (ValueError, TypeError):

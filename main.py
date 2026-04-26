@@ -209,54 +209,51 @@ class CustomSegmentReplyPlugin(Star):
 
         return segments
 
-    def _calculate_delay(self, prev_seg: str, curr_seg: str) -> float:
-        """
-        根据配置计算发送延迟
-
-        Args:
-            prev_seg: 前一段文本
-            curr_seg: 当前要发送的文本
-
-        Returns:
-            float: 延迟秒数
-        """
-        delay_range = self.cfg.random_delay_range
-        if isinstance(delay_range, list) and len(delay_range) >= 2:
-            delay_min = float(delay_range[0])
-            delay_max = float(delay_range[1])
-        else:
-            delay_min, delay_max = 1.0, 3.0
-
-        if delay_min > delay_max:
-            delay_min, delay_max = delay_max, delay_min
-
-        # 使用正态分布生成随机延迟
-        mean = (delay_min + delay_max) / 2
-        std = max((delay_max - delay_min) / 6, 1e-6)
-        return max(delay_min, min(delay_max, random.gauss(mean, std)))
-
     async def _set_typing(self, event: AstrMessageEvent, typing: bool):
-        """
-        向平台发送"正在输入"状态
-
-        Args:
-            event: 消息事件
-            typing: 是否显示正在输入
-        """
+        """向平台发送"正在输入"状态（多平台支持）"""
         try:
-            if event.get_platform_name() != "aiocqhttp":
+            platform = event.get_platform_name()
+            
+            # aiocqhttp (QQ)
+            if platform == "aiocqhttp":
+                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+                if not isinstance(event, AiocqhttpMessageEvent):
+                    return
+                user_id = event.message_obj.sender.user_id
+                if not user_id:
+                    return
+                await event.bot.api.call_action(
+                    "set_input_status",
+                    user_id=user_id,
+                    event_type=1 if typing else 0,
+                )
                 return
-            from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
-            if not isinstance(event, AiocqhttpMessageEvent):
+            
+            # telegram
+            if platform == "telegram":
+                chat_id = event.message_obj.sender.user_id or event.message_obj.group_id
+                if chat_id:
+                    await event.bot.api.call_action(
+                        "sendChatAction",
+                        chat_id=chat_id,
+                        action="typing" if typing else "cancel",
+                    )
                 return
-            user_id = event.message_obj.sender.user_id
-            if not user_id:
+            
+            # discord
+            if platform == "discord":
+                # Discord 通过 typing() 上下文管理器实现，这里简化处理
+                if typing and hasattr(event, "_discord_event"):
+                    await event._discord_event.channel.trigger_typing()
                 return
-            await event.bot.api.call_action(
-                "set_input_status",
-                user_id=user_id,
-                event_type=1 if typing else 0,
-            )
+            
+            # 其他平台尝试通用方式
+            if typing and hasattr(event.bot, "api") and hasattr(event.bot.api, "call_action"):
+                try:
+                    await event.bot.api.call_action("typing", {})
+                except Exception:
+                    pass
+                    
         except Exception:
             pass
 
@@ -310,84 +307,88 @@ class CustomSegmentReplyPlugin(Star):
         Args:
             event: 消息事件
         """
+        from astrbot.core.message.components import Image
+        from astrbot.core.message.message_event_result import MessageChain, ResultContentType
+
         result = event.get_result()
         if result is None or not result.chain:
             return
 
-        # 收集需要处理的纯文本内容
-        segments_to_send: List[str] = []
-        other_components: List[Plain] = []
+        # 流式输出时跳过，避免重复发送
+        if result.result_content_type == ResultContentType.STREAMING_FINISH:
+            return
+
+        # 按原始顺序收集：所有文本（包括分段后的）+ Image 类型组件
+        plain_texts: List[str] = []
+        image_components: List = []
+        total_replace_count = 0
 
         for comp in result.chain:
             if not isinstance(comp, Plain):
-                other_components.append(comp)
+                image_components.append(comp)
                 continue
 
             text = comp.text
             if not text.strip():
-                other_components.append(comp)
+                image_components.append(comp)
                 continue
 
             processed_text, replace_count = self._apply_replacements(text)
+            total_replace_count += replace_count
 
             if not self._should_segment(processed_text):
-                if replace_count > 0:
-                    comp.text = processed_text
-                other_components.append(comp)
+                # 不需要分段，直接追加到文本列表
+                plain_texts.append(processed_text)
                 continue
 
             segments = self._segment_text(processed_text)
-            if len(segments) <= 1:
-                if replace_count > 0:
-                    comp.text = processed_text
-                other_components.append(comp)
+            if not segments or (len(segments) == 1 and not segments[0].strip()):
+                # 分段失败或只有空段，直接用原文本
+                plain_texts.append(processed_text)
                 continue
 
-            # 需要分段的内容
-            segments_to_send.extend(segments)
+            if len(segments) == 1:
+                # 分段后只有一段，直接追加
+                plain_texts.append(segments[0])
+                continue
+
+            # 过滤空段，保留有效内容
+            valid_segments = []
+            for i, seg in enumerate(segments):
+                stripped = seg.strip('\n\r')
+                if stripped:
+                    valid_segments.append(stripped)
+            plain_texts.extend(valid_segments)
             logger.info(
-                f"[分段插件] 处理完成，原文长度 {len(text)}，替换 {replace_count} 处，分段 {len(segments)} 段"
+                f"[分段插件] 处理完成，原文长度 {len(text)}，替换 {total_replace_count} 处，分段 {len(valid_segments)} 段"
             )
 
-        # 如果没有需要分段的内容，直接返回（使用原始 chain）
-        if not segments_to_send:
+        # 如果没有文本内容，直接返回
+        if not plain_texts:
             return
-
-        # 有分段内容需要发送
-        # 先收集所有文本分段
-        all_text_segments = segments_to_send.copy()
-        if not all_text_segments:
-            return
-
-        first_segment = all_text_segments[0]
-        remaining_segments = all_text_segments[1:] if len(all_text_segments) > 1 else []
-
-        # 设置 result.chain：第一条分段 + 非文本组件（图片等）
-        if other_components:
-            result.chain = [Plain(first_segment)] + other_components
-        else:
-            result.chain = [Plain(first_segment)]
 
         # 构建完整内容用于保存对话历史
-        full_text = first_segment + ("\n\n" + "\n\n".join(remaining_segments) if remaining_segments else "")
+        full_text = "\n\n".join(plain_texts)
 
-        # 逐条发送剩余分段
-        if remaining_segments:
-            await self._set_typing(event, True)
-            for i, segment in enumerate(remaining_segments):
-                if i > 0:
-                    delay = self._calculate_delay(remaining_segments[i - 1], segment)
-                    await asyncio.sleep(delay)
-                await self._set_typing(event, True)
-                await event.send(MessageChain().message(segment))
-                await self._set_typing(event, False)
-            await self._set_typing(event, False)
+        # 先发送所有文本分段，再发送图片
+        await self._set_typing(event, True)
+        for segment in plain_texts:
+            await event.send(MessageChain().message(segment))
+        await self._set_typing(event, False)
+        # 图片单独发，跟随在对话后（优先取 meme_manager 的表情包，否则用 result.chain 里的 Image）
+        meme_images = event.get_extra("meme_manager_pending_images")
+        pending_images = meme_images if meme_images else image_components
+        if pending_images:
+            await asyncio.sleep(0.3)
+            await event.send(MessageChain(pending_images))
+            event.set_extra("meme_manager_pending_images", None)
 
         # 保存完整的分段内容到对话历史
         if full_text:
             await self._save_to_conversation_history(event, full_text)
 
-        logger.info(f"[分段插件] 分段回复完成，共 {len(remaining_segments) + 1} 段")
+        # 清空 result.chain，防止框架重复发送
+        result.chain = []
 
     async def terminate(self):
         """
