@@ -1,0 +1,145 @@
+{
+  "min_length": {
+    "description": "触发分段的最小字数",
+    "type": "int",
+    "default": 20,
+    "hint": "文本长度超过此值才可能触发分段。"
+  },
+  "max_length": {
+    "description": "单段最大字数",
+    "type": "int",
+    "default": 50,
+    "hint": "程序会在 [min_length, max_length] 区间内寻找断点进行分段。"
+  },
+  "allow_exceed_max": {
+    "description": "启用弹性延伸",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后，当区间内找不到断点时，会向后扩展寻找下一个断点（不超过 hard_max_limit）。"
+  },
+  "hard_max_limit": {
+    "description": "绝对熔断字数",
+    "type": "int",
+    "default": 100,
+    "hint": "强制截断的绝对上限，防止无限搜索。"
+  },
+  "merge_short_tail": {
+    "description": "启用短尾合并",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后，如果最后一段字数过少，会合并到前一段。"
+  },
+  "short_tail_threshold": {
+    "description": "短尾合并阈值",
+    "type": "int",
+    "default": 8,
+    "hint": "最后一段字数小于等于此值时，触发短尾合并。"
+  },
+  "split_symbols": {
+    "description": "断句符号列表（按优先级排序）",
+    "type": "list",
+    "default": [
+      "\n\n",
+      "\n",
+      "。",
+      "！",
+      "？"
+    ],
+    "hint": "程序会优先匹配靠前的符号进行断句。可以用 \\n 表示换行符。"
+  },
+  "keep_symbol": {
+    "description": "保留断点符号",
+    "type": "bool",
+    "default": false,
+    "hint": "开启则分段后保留断点符号（如句号）；关闭则不保留。"
+  },
+  "exclude_keywords": {
+    "description": "排除关键词列表",
+    "type": "list",
+    "default": [
+      "模型列表",
+      "帮助",
+      "help",
+      "命令列表",
+      "菜单",
+      "功能列表"
+    ],
+    "hint": "文本中包含这些关键词时，将跳过分段处理。"
+  },
+  "exclude_patterns": {
+    "description": "排除正则表达式列表",
+    "type": "list",
+    "default": [],
+    "hint": "文本匹配这些正则表达式时，将跳过分段处理。"
+  },
+  "enable_string_replace": {
+    "description": "启用字符串替换",
+    "type": "bool",
+    "default": false,
+    "hint": "开启后将执行 string_replacements 中的替换规则。"
+  },
+  "string_replacements": {
+    "description": "字符串替换规则列表",
+    "type": "list",
+    "default": ["小笨蛋=>小可爱"],
+    "hint": "格式：原字符=>替换后字符。如：\"小笨蛋=>小可爱\"、\"笑死=>哈哈\""
+  },
+  "enable_markdown_replace": {
+    "description": "启用 Markdown 清除",
+    "type": "bool",
+    "default": false,
+    "hint": "开启后将执行 markdown_replacements 中的 Markdown 格式清除规则。"
+  },
+  "markdown_replacements": {
+    "description": "Markdown 清除规则列表",
+    "type": "list",
+    "default": [
+      {
+        "pattern": "\\\\*\\\\*([^*]+)\\\\*\\\\*",
+        "replacement": "\\1",
+        "is_regex": true
+      },
+      {
+        "pattern": "__([^_]+)__",
+        "replacement": "\\1",
+        "is_regex": true
+      },
+      {
+        "pattern": "`([^`]+)`",
+        "replacement": "\\1",
+        "is_regex": true
+      },
+      {
+        "pattern": "```(?:\\w+\\n)?([\\\\s\\\\S]*?)```",
+        "replacement": "\\1",
+        "is_regex": true
+      },
+      {
+        "pattern": "(?m)^#{1,6}\\s+",
+        "replacement": "",
+        "is_regex": true
+      },
+      {
+        "pattern": "(?m)^>\\s*",
+        "replacement": "",
+        "is_regex": true
+      },
+      {
+        "pattern": "~~([^~]+)~~",
+        "replacement": "\\1",
+        "is_regex": true
+      },
+      {
+        "pattern": "\\\\*([^*]+)\\\\*",
+        "replacement": "\\1",
+        "is_regex": true
+      },
+      {
+        "pattern": "_([^_]+)_",
+        "replacement": "\\1",
+        "is_regex": true
+      }
+    ],
+    "hint": "正则表达式格式的 Markdown 标记清除规则。默认仅移除格式标记，保留正文内容。"
+  }
+}
