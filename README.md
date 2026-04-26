@@ -62,8 +62,8 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `enable_string_replace` | bool | true | 启用字符串替换 |
-| `string_replacements` | list | `["😁=>🤪", "😂=>🤭"]` | 替换规则列表 |
+| `enable_string_replace` | bool | **false** | 启用字符串替换 |
+| `string_replacements` | list | `["小笨蛋=>小可爱"]` | 替换规则列表 |
 
 格式：`原字符=>替换后字符`
 
@@ -80,8 +80,8 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `enable_markdown_replace` | bool | true | 启用 Markdown 清除 |
-| `markdown_replacements` | list | 见下方 | Markdown 清除规则列表 |
+| `enable_markdown_replace` | bool | **false** | 启用 Markdown 清除 |
+| `markdown_replacements` | list | 见 `_conf_schema.json` | Markdown 清除规则列表 |
 
 默认清除格式标记，但保留正文内容：
 - `**加粗**` → 变成 `加粗`
@@ -112,12 +112,12 @@
   "split_symbols": ["\n\n", "\n", "。", "！", "？"],
   "keep_symbol": false,
   "exclude_keywords": ["模型列表", "帮助", "help", "命令列表", "菜单", "功能列表"],
-  "enable_string_replace": true,
+  "enable_string_replace": false,
   "string_replacements": [
     "😁=>🤪",
     "😂=>🤤"
   ],
-  "enable_markdown_replace": true,
+  "enable_markdown_replace": false,
   "markdown_replacements": [
     {"pattern": "\\*\\*([^*]+)\\*\\*", "replacement": "\\1", "is_regex": true},
     {"pattern": "`([^`]+)`", "replacement": "\1", "is_regex": true}

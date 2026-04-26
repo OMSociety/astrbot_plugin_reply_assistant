@@ -23,7 +23,7 @@ from astrbot.core.message.message_event_result import MessageChain
 from .config_manager import SegmentConfigManager
 
 
-@register("astrbot_plugin_reply_assistant", "Slandre & Flandre", "分段与文本替换", "1.0.0")
+@register("astrbot_plugin_reply_assistant", "Slandre & Flandre", "分段与文本替换", "1.1.0")
 class CustomSegmentReplyPlugin(Star):
     """
     消息分段处理插件
