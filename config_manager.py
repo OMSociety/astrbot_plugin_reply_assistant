@@ -2,9 +2,9 @@
 分段插件配置管理器
 负责配置的解析和验证
 """
+
 import logging
 import re
-from typing import List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +20,7 @@ class SegmentConfigManager:
         self._init_symbol_config()
         self._init_replace_config()
         self._init_exclude_config()
+        self._init_typing_config()
 
     def _init_length_config(self):
         """初始化长度相关配置"""
@@ -30,7 +31,9 @@ class SegmentConfigManager:
             self.min_length = self.max_length
 
         self.allow_exceed_max = bool(self.config.get("allow_exceed_max", True))
-        self.hard_max_limit = max(self.max_length, self._safe_int("hard_max_limit", 100))
+        self.hard_max_limit = max(
+            self.max_length, self._safe_int("hard_max_limit", 100)
+        )
 
         self.merge_short_tail = bool(self.config.get("merge_short_tail", True))
         self.short_tail_threshold = max(0, self._safe_int("short_tail_threshold", 8))
@@ -46,7 +49,23 @@ class SegmentConfigManager:
         """初始化分段符号配置"""
         raw_symbols = self.config.get("split_symbols")
         if not isinstance(raw_symbols, list) or len(raw_symbols) == 0:
-            raw_symbols = ["\n\n", "\n", "。", "！", "？", "；", "……", ".", "!", "?", ";", "」", "、", "，", ","]
+            raw_symbols = [
+                "\n\n",
+                "\n",
+                "。",
+                "！",
+                "？",
+                "；",
+                "……",
+                ".",
+                "!",
+                "?",
+                ";",
+                "」",
+                "、",
+                "，",
+                ",",
+            ]
 
         self.split_symbols = []
         seen = set()
@@ -65,19 +84,35 @@ class SegmentConfigManager:
 
     def _init_replace_config(self):
         """初始化替换相关配置"""
-        self.enable_string_replace = bool(self.config.get("enable_string_replace", False))
-        self.string_replacements = self._parse_replacements(self.config.get("string_replacements", ["小笨蛋=>小可爱"]))
+        self.enable_string_replace = bool(
+            self.config.get("enable_string_replace", False)
+        )
+        self.string_replacements = self._parse_replacements(
+            self.config.get("string_replacements", ["小笨蛋=>小可爱"])
+        )
 
-        self.enable_markdown_replace = bool(self.config.get("enable_markdown_replace", False))
-        self.markdown_replacements = self._parse_replacements(self.config.get("markdown_replacements", []))
+        self.enable_markdown_replace = bool(
+            self.config.get("enable_markdown_replace", False)
+        )
+        self.markdown_replacements = self._parse_replacements(
+            self.config.get("markdown_replacements", [])
+        )
 
     def _init_exclude_config(self):
         """初始化排除规则配置"""
         exclude_kw = self.config.get("exclude_keywords", [])
-        self.exclude_keywords = [kw for kw in exclude_kw if isinstance(kw, str)] if isinstance(exclude_kw, list) else []
+        self.exclude_keywords = (
+            [kw for kw in exclude_kw if isinstance(kw, str)]
+            if isinstance(exclude_kw, list)
+            else []
+        )
 
         exclude_patterns = self.config.get("exclude_patterns", [])
-        patterns = [p for p in exclude_patterns if isinstance(p, str)] if isinstance(exclude_patterns, list) else []
+        patterns = (
+            [p for p in exclude_patterns if isinstance(p, str)]
+            if isinstance(exclude_patterns, list)
+            else []
+        )
         self.exclude_patterns = patterns
 
         self.compiled_exclude_patterns = []
@@ -93,7 +128,7 @@ class SegmentConfigManager:
         except (ValueError, TypeError):
             return default
 
-    def _parse_replacements(self, raw: list) -> List[Tuple[str, str, bool]]:
+    def _parse_replacements(self, raw: list) -> list[tuple[str, str, bool]]:
         """
         解析替换规则
 
@@ -129,6 +164,12 @@ class SegmentConfigManager:
 
         return result
 
+    def _init_typing_config(self):
+        """初始化打字指示器配置"""
+        self.enable_typing_indicator = bool(
+            self.config.get("enable_typing_indicator", True)
+        )
+
     def get_all_config(self) -> dict:
         """
         获取所有配置（供调试用）
@@ -155,5 +196,6 @@ class SegmentConfigManager:
             "string_replacements": self.string_replacements,
             "enable_markdown_replace": self.enable_markdown_replace,
             "markdown_replacements": self.markdown_replacements,
-            # 其他
+            # 输入指示
+            "enable_typing_indicator": self.enable_typing_indicator,
         }

@@ -4,4 +4,4 @@ display_name: 分段与文本替换
 logo_path: ''
 name: reply_assistant
 repo: https://github.com/OMSociety/astrbot_plugin_reply_assistant
-version: 1.1.0
+version: 1.2.0

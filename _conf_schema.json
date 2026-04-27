@@ -53,6 +53,12 @@
     "default": false,
     "hint": "开启则分段后保留断点符号（如句号）；关闭则不保留。"
   },
+  "enable_typing_indicator": {
+    "description": "启用「正在输入」状态指示",
+    "type": "bool",
+    "default": true,
+    "hint": "开启后分段发送时会显示「正在输入…」状态。QQ(aiocqhttp)平台兼容性不佳时可关闭。"
+  },
   "exclude_keywords": {
     "description": "排除关键词列表",
     "type": "list",

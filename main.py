@@ -11,18 +11,19 @@
 import asyncio
 import json
 import re
-from typing import List
 
+from astrbot.api.all import AstrBotConfig, Context, Star, logger, register
 from astrbot.api.event import AstrMessageEvent
 from astrbot.api.event.filter import on_decorating_result
-from astrbot.api.all import Context, Star, AstrBotConfig, logger, register
 from astrbot.api.message_components import Plain
 from astrbot.core.message.message_event_result import MessageChain
 
 from .config_manager import SegmentConfigManager
 
 
-@register("astrbot_plugin_reply_assistant", "Slandre & Flandre", "分段与文本替换", "1.1.0")
+@register(
+    "astrbot_plugin_reply_assistant", "Slandre & Flandre", "分段与文本替换", "1.2.0"
+)
 class CustomSegmentReplyPlugin(Star):
     """
     消息分段处理插件
@@ -63,7 +64,9 @@ class CustomSegmentReplyPlugin(Star):
                             processed = processed.replace(pattern, replacement)
                             total_count += count
                 except Exception as e:
-                    logger.warning(f"[替换规则] 执行失败: {pattern} -> {replacement}, 错误: {e}")
+                    logger.warning(
+                        f"[替换规则] 执行失败: {pattern} -> {replacement}, 错误: {e}"
+                    )
 
         # 2. Markdown 替换（使用正则规则）
         if self.cfg.enable_markdown_replace:
@@ -78,7 +81,9 @@ class CustomSegmentReplyPlugin(Star):
                             processed = processed.replace(pattern, replacement)
                             total_count += count
                 except Exception as e:
-                    logger.warning(f"[Markdown替换] 执行失败: {pattern} -> {replacement}, 错误: {e}")
+                    logger.warning(
+                        f"[Markdown替换] 执行失败: {pattern} -> {replacement}, 错误: {e}"
+                    )
 
         return processed, total_count
 
@@ -105,7 +110,7 @@ class CustomSegmentReplyPlugin(Star):
 
         return True
 
-    def _segment_text(self, text: str) -> List[str]:
+    def _segment_text(self, text: str) -> list[str]:
         """
         区间探测分段算法
 
@@ -123,7 +128,7 @@ class CustomSegmentReplyPlugin(Star):
         if not text:
             return []
 
-        segments: List[str] = []
+        segments: list[str] = []
 
         escaped_symbols = [re.escape(s) for s in self.cfg.split_symbols]
         symbol_pattern = "|".join(escaped_symbols)
@@ -131,14 +136,14 @@ class CustomSegmentReplyPlugin(Star):
         split_regex = re.compile(symbol_pattern)
 
         # 记录断点位置 + 具体命中的分隔符，用于 keep_symbol=False 时精准删掉
-        breakpoints: List[tuple[int, str]] = []
+        breakpoints: list[tuple[int, str]] = []
         for match in split_regex.finditer(text):
             breakpoints.append((match.end(), match.group(0)))
 
         # 无可分隔符时按 hard_max_limit 直接分块，不丢数据
         if not breakpoints:
             for start in range(0, len(text), self.cfg.hard_max_limit):
-                seg = text[start:start + self.cfg.hard_max_limit]
+                seg = text[start : start + self.cfg.hard_max_limit]
                 if seg:
                     segments.append(seg)
             return segments
@@ -208,10 +213,13 @@ class CustomSegmentReplyPlugin(Star):
         """向平台发送"正在输入"状态（多平台支持）"""
         try:
             platform = event.get_platform_name()
-            
+
             # aiocqhttp (QQ)
             if platform == "aiocqhttp":
-                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import AiocqhttpMessageEvent
+                from astrbot.core.platform.sources.aiocqhttp.aiocqhttp_message_event import (
+                    AiocqhttpMessageEvent,
+                )
+
                 if not isinstance(event, AiocqhttpMessageEvent):
                     return
                 user_id = event.message_obj.sender.user_id
@@ -223,7 +231,7 @@ class CustomSegmentReplyPlugin(Star):
                     event_type=1 if typing else 0,
                 )
                 return
-            
+
             # telegram
             if platform == "telegram":
                 chat_id = event.message_obj.sender.user_id or event.message_obj.group_id
@@ -234,7 +242,7 @@ class CustomSegmentReplyPlugin(Star):
                         action="typing" if typing else "cancel",
                     )
                 return
-            
+
             # discord
             if platform == "discord":
                 try:
@@ -243,18 +251,24 @@ class CustomSegmentReplyPlugin(Star):
                 except Exception as e:
                     logger.debug(f"[ReplyAssistant] Discord typing 失败: {e}")
                 return
-            
+
             # 其他平台尝试通用方式
-            if typing and hasattr(event.bot, "api") and hasattr(event.bot.api, "call_action"):
+            if (
+                typing
+                and hasattr(event.bot, "api")
+                and hasattr(event.bot.api, "call_action")
+            ):
                 try:
                     await event.bot.api.call_action("typing", {})
                 except Exception:
                     pass
-                    
+
         except Exception:
             pass
 
-    async def _save_to_conversation_history(self, event: AstrMessageEvent, content: str):
+    async def _save_to_conversation_history(
+        self, event: AstrMessageEvent, content: str
+    ):
         """
         将分段合并后的完整回复写入对话历史
 
@@ -277,7 +291,11 @@ class CustomSegmentReplyPlugin(Star):
                 return
 
             try:
-                history = json.loads(conversation.history) if isinstance(conversation.history, str) else conversation.history
+                history = (
+                    json.loads(conversation.history)
+                    if isinstance(conversation.history, str)
+                    else conversation.history
+                )
             except (json.JSONDecodeError, TypeError):
                 history = []
 
@@ -304,7 +322,7 @@ class CustomSegmentReplyPlugin(Star):
         Args:
             event: 消息事件
         """
-        from astrbot.core.message.message_event_result import MessageChain, ResultContentType
+        from astrbot.core.message.message_event_result import ResultContentType
 
         result = event.get_result()
         if result is None or not result.chain:
@@ -315,8 +333,8 @@ class CustomSegmentReplyPlugin(Star):
             return
 
         # 按原始顺序收集：所有文本（包括分段后的）+ Image 类型组件
-        plain_texts: List[str] = []
-        image_components: List = []
+        plain_texts: list[str] = []
+        image_components: list = []
         total_replace_count = 0
 
         for comp in result.chain:
@@ -351,7 +369,7 @@ class CustomSegmentReplyPlugin(Star):
             # 过滤空段，保留有效内容
             valid_segments = []
             for i, seg in enumerate(segments):
-                stripped = seg.strip('\n\r')
+                stripped = seg.strip("\n\r")
                 if stripped:
                     valid_segments.append(stripped)
             plain_texts.extend(valid_segments)
@@ -367,10 +385,12 @@ class CustomSegmentReplyPlugin(Star):
         full_text = "\n\n".join(plain_texts)
 
         # 先发送所有文本分段，再发送图片
-        await self._set_typing(event, True)
+        if self.cfg.enable_typing_indicator:
+            await self._set_typing(event, True)
         for segment in plain_texts:
             await event.send(MessageChain().message(segment))
-        await self._set_typing(event, False)
+        if self.cfg.enable_typing_indicator:
+            await self._set_typing(event, False)
         # 图片单独发，跟随在对话后（优先取 meme_manager 的表情包，否则用 result.chain 里的 Image）
         meme_images = event.get_extra("meme_manager_pending_images")
         pending_images = meme_images if meme_images else image_components

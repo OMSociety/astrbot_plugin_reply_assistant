@@ -1,38 +1,60 @@
-# 分段与文本替换插件
+# 分段与文本替换
+
+[![Version](https://img.shields.io/badge/version-v1.2.0-blue.svg)](https://github.com/OMSociety/astrbot_plugin_reply_assistant)
+[![AstrBot](https://img.shields.io/badge/AstrBot-%E2%89%A5v4-green.svg)](https://github.com/AstrBotDevs/AstrBot)
+[![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
+
+基于规则引擎的智能消息分段插件，支持字符串替换、Markdown 清除、平台打字状态模拟，零外部依赖。
 
 > 本项目基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 重构。
 
----
-
-## 功能列表
-
-1. 按规则自动将长消息分段发送
-2. 支持关键词排除（特定内容不分段）
-3. 支持字符串替换（如将表情替换为其他）
-4. 支持 Markdown 格式清除
+[快速开始](#-快速开始) • [分段算法](#-分段算法) • [配置项](#-配置项说明) • [更新日志](CHANGELOG.md)
 
 ---
 
-## 安装
+## 📖 功能概览
 
-1. 将插件文件夹放入 `AstrBot/data/plugins/` 目录
-2. 重启 AstrBot
-3. 在 WebUI 管理面板 -> 插件设置中配置
+### 核心能力
+- **智能分段** — 区间探测 + 弹性延伸 + 绝对熔断三级策略，长文本按标点优先级自动拆分
+- **字符串替换** — 自定义文本替换规则，支持表情映射、敏感词过滤等场景
+- **Markdown 清除** — 自动剥离加粗、代码块、标题等格式标记，保留正文内容
+- **排除规则** — 关键词 + 正则双通道，帮助列表、菜单等特定消息免处理
+- **短尾合并** — 最后一段过短时自动合并到前一段，避免碎片化消息
+- **多平台打字状态** — 支持 QQ(aiocqhttp)、Telegram、Discord 等平台的「正在输入」状态显示，可配置开关
+
+### 设计理念
+零外部依赖，纯本地规则引擎。不调 LLM、不走网络，稳定可靠零成本。
 
 ---
 
-## 分段算法
+## 🚀 快速开始
+
+### 安装
+
+**方式一：插件市场**
+- AstrBot WebUI → 插件市场 → 搜索 `astrbot_plugin_reply_assistant`
+
+**方式二：GitHub 仓库**
+- AstrBot WebUI → 插件管理 → ＋ 安装
+- 粘贴仓库地址：`https://github.com/OMSociety/astrbot_plugin_reply_assistant`
+
+### 依赖
+本插件无外部依赖，开箱即用。
+
+---
+
+## 🧠 分段算法
 
 采用区间探测分段策略：
 
-1. **区间探测**：优先在 `[min_length, max_length]` 区间内寻找断点
-2. **弹性延伸**：`allow_exceed_max=true` 时，向后扩展找下一个断点
-3. **绝对熔断**：超过 `hard_max_limit` 则强制截断
-4. **短尾合并**：最后一段过短时合并到前一段
+1. **区间探测** — 优先在 `[min_length, max_length]` 区间内寻找断点
+2. **弹性延伸** — `allow_exceed_max=true` 时，向后扩展找下一个断点
+3. **绝对熔断** — 超过 `hard_max_limit` 则强制截断
+4. **短尾合并** — 最后一段过短时合并到前一段
 
 ---
 
-## 配置项说明
+## ⚙️ 配置项说明
 
 ### 分段配置
 
@@ -49,6 +71,12 @@
 
 `split_symbols` 默认值：`["\n\n", "\n", "。", "！", "？"]`
 
+### 打字状态配置
+
+| 配置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `enable_typing_indicator` | bool | true | 发送分段时显示「正在输入」状态 |
+
 ### 排除配置
 
 | 配置项 | 类型 | 默认值 | 说明 |
@@ -62,7 +90,7 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `enable_string_replace` | bool | **false** | 启用字符串替换 |
+| `enable_string_replace` | bool | false | 启用字符串替换 |
 | `string_replacements` | list | `["小笨蛋=>小可爱"]` | 替换规则列表 |
 
 格式：`原字符=>替换后字符`
@@ -80,47 +108,39 @@
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `enable_markdown_replace` | bool | **false** | 启用 Markdown 清除 |
-| `markdown_replacements` | list | 见 `_conf_schema.json` | Markdown 清除规则列表 |
+| `enable_markdown_replace` | bool | false | 启用 Markdown 清除 |
+| `markdown_replacements` | list | 见 schema | Markdown 清除规则列表 |
 
 默认清除格式标记，但保留正文内容：
-- `**加粗**` → 变成 `加粗`
-- `` `代码` `` → 变成 `代码`
-- ```` ```代码块``` ```` → 去掉反引号仍保留代码内容
-- `# 标题` → 去掉标题 `#` 符号
-- `> 引用` → 去掉引用前导符
-- `~~删除线~~` → 变成 `删除线`
-- `*斜体*` / `_斜体_` → 去掉斜体标记后保留 `斜体`
+- `**加粗**` → `加粗`
+- `` `代码` `` → `代码`
+- `# 标题` → `标题`
+- `> 引用` → `引用`
+- `~~删除线~~` → `删除线`
+- `*斜体*` / `_斜体_` → `斜体`
 
-**保留的格式**（不处理）：
-- 链接 `[文字](url)` - 保持原样
-- 图片 `![alt](url)` - 保持原样
-- 列表 `- item` - 保持原样
+**保留的格式**（不处理）：链接 `[文字](url)`、图片 `![alt](url)`、列表 `- item`
 
 ---
 
-## 配置示例
+## 📝 更新日志
 
-```json
-{
-  "min_length": 20,
-  "max_length": 50,
-  "allow_exceed_max": true,
-  "hard_max_limit": 100,
-  "merge_short_tail": true,
-  "short_tail_threshold": 8,
-  "split_symbols": ["\n\n", "\n", "。", "！", "？"],
-  "keep_symbol": false,
-  "exclude_keywords": ["模型列表", "帮助", "help", "命令列表", "菜单", "功能列表"],
-  "enable_string_replace": false,
-  "string_replacements": [
-    "😁=>🤪",
-    "😂=>🤤"
-  ],
-  "enable_markdown_replace": false,
-  "markdown_replacements": [
-    {"pattern": "\\*\\*([^*]+)\\*\\*", "replacement": "\\1", "is_regex": true},
-    {"pattern": "`([^`]+)`", "replacement": "\1", "is_regex": true}
-  ]
-}
-```
+> 📋 **[查看完整更新日志 →](CHANGELOG.md)**
+
+---
+
+## 🤝 贡献与反馈
+
+如遇问题请在 [GitHub Issues](https://github.com/OMSociety/astrbot_plugin_reply_assistant/issues) 提交，欢迎 Pull Request！
+
+---
+
+## 📜 许可证
+
+本项目采用 **MIT License** 开源协议。
+
+---
+
+## 👤 作者
+
+**Slandre & Flandre** — [@OMSociety](https://github.com/OMSociety)
