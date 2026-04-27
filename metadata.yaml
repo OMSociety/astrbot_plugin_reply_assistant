@@ -1,5 +1,5 @@
 author: Slandre & Flandre
-desc: 基于规则引擎的智能消息分段插件，支持字符串替换、Markdown 清除、平台打字状态模拟，零外部依赖
+desc: 基于规则引擎的智能消息分段插件，支持字符串替换、Markdown 清除、平台打字状态模拟
 display_name: 分段与文本替换
 name: reply_assistant
 repo: https://github.com/OMSociety/astrbot_plugin_reply_assistant
