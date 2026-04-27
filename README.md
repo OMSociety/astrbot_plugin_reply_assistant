@@ -6,7 +6,7 @@
 
 基于规则引擎的智能消息分段插件，支持字符串替换、Markdown 清除、平台打字状态模拟，零外部依赖。
 
-> 本项目基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 由AI重构。
+> 本项目由AI编写，部分源码基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 。
 
 [快速开始](#-快速开始) • [分段算法](#-分段算法) • [配置项](#-配置项说明) • [更新日志](CHANGELOG.md)
 
