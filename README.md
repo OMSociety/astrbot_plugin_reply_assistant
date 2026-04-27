@@ -4,7 +4,7 @@
 [![AstrBot](https://img.shields.io/badge/AstrBot-%E2%89%A5v4-green.svg)](https://github.com/AstrBotDevs/AstrBot)
 [![License](https://img.shields.io/badge/license-MIT-orange.svg)](LICENSE)
 
-基于规则引擎的智能消息分段插件，支持字符串替换、Markdown 清除、平台打字状态模拟，零外部依赖。
+基于规则引擎的智能消息分段插件，支持字符串替换、Markdown 清除、平台打字状态模拟。
 
 > 本项目由AI编写，部分源码基于 [astrbot_plugin_custome_segment_reply](https://github.com/LinJohn8/astrbot_plugin_custome_segment_reply) 。
 > 
