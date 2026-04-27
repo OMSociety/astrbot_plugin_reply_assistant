@@ -1,5 +1,5 @@
 author: Slandre & Flandre
-desc: 本地规则智能分段插件。通过自定义字数、标点优先级、超长降级等规则实现智能分段，零成本更稳定。
+desc: 基于规则引擎的智能消息分段插件，支持字符串替换、Markdown 清除、平台打字状态模拟，零外部依赖
 display_name: 分段与文本替换
 name: reply_assistant
 repo: https://github.com/OMSociety/astrbot_plugin_reply_assistant
